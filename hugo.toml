@@ -1,0 +1,14 @@
+baseURL = 'https://guwinston.github.io/wenconggu.github.io/'
+languageCode = 'zh-cn'
+title = '个人手记'
+enableRobotsTXT = true
+hasCJKLanguage = true
+summaryLength = 100
+[params]
+  description = '关于技术、阅读、生活，以及一路生长的想法。'
+[taxonomies]
+  tag = 'tags'
+[outputs]
+  home = ['HTML', 'RSS', 'JSON']
+[markup.goldmark.renderer]
+  unsafe = false

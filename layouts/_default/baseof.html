@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="day">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ if not .IsHome }}{{ .Title }} · {{ end }}{{ .Site.Title }}</title>
+<meta name="description" content="{{ .Description | default .Site.Params.description }}">
+<link rel="stylesheet" href="{{ "css/site.css" | relURL }}">
+<link rel="alternate" type="application/rss+xml" title="个人手记" href="{{ "index.xml" | relURL }}">
+<script defer src="{{ "js/site.js" | relURL }}"></script>
+{{ if .Params.math }}<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css"><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script><script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]});"></script>{{ end }}
+</head>
+<body>
+<header class="header wrap"><a class="brand" href="{{ .Site.Home.RelPermalink }}"><span class="mark">记</span> 个人手记<span class="brand-en"> / PERSONAL SPACE</span></a><nav aria-label="主导航"><a href="{{ "technology/" | relURL }}">技术</a><a href="{{ "jottings/" | relURL }}">随记</a><a href="{{ "archive/" | relURL }}">全部记录</a><a href="{{ "about/" | relURL }}">关于</a><button id="search-open" aria-label="搜索笔记">搜索 <span>⌕</span></button></nav></header>
+<main class="wrap">{{ block "main" . }}{{ end }}</main>
+<footer class="wrap footer"><span>认真探索，也认真生活。</span><span>© {{ now.Year }} 个人手记 · <a href="{{ "index.xml" | relURL }}">RSS 订阅 ↗</a></span></footer>
+<dialog id="search-dialog"><div class="search-head"><label for="search-input">搜索手记</label><button id="search-close" aria-label="关闭搜索">✕</button></div><input id="search-input" type="search" placeholder="搜索论文、主题或关键词…" autocomplete="off"><div id="search-results" aria-live="polite">输入关键词开始搜索。</div></dialog>
+<script id="search-config" type="application/json">{"url":{{ "index.json" | relURL | jsonify | safeJS }}}</script>
+</body></html>

@@ -20,3 +20,5 @@
 .closing{background:var(--soft);border:1px solid var(--line)}
 .hero h1{font-weight:600}
 .domain-card h3,.section-head h2{font-weight:600}
+
+.prose table{display:block;max-width:100%;overflow-x:auto;border-collapse:collapse;font-size:14px;margin:24px 0}.prose th,.prose td{border:1px solid var(--line);padding:10px 14px;text-align:left;min-width:130px}.prose th{background:var(--soft);font-weight:600}.prose tbody tr:nth-child(even){background:var(--surface)}

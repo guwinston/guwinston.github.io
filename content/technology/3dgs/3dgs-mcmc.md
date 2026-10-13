@@ -25,11 +25,15 @@ paper_url: 'https://arxiv.org/abs/2404.09591'
 
 单个高斯由位置 $\mu$、旋转 $R$、主轴尺度 $s$、透明度 $o$ 和 SH 颜色 $c$ 表示：
 
-$$\Sigma=R\operatorname{diag}(s_x^2,s_y^2,s_z^2)R^T.$$
+$$
+\Sigma=R\operatorname{diag}(s_x^2,s_y^2,s_z^2)R^T.
+$$
 
 像素颜色由 Alpha Blending 合成：
 
-$$C(x)=\sum_i c_i\alpha_i(x)\prod_{j<i}(1-\alpha_j(x)).$$
+$$
+C(x)=\sum_i c_i\alpha_i(x)\prod_{j\lt i}(1-\alpha_j(x)).
+$$
 
 若原高斯某像素有效不透明度为 $0.8$，直接复制一个相同高斯后，合成不透明度变为 $1-(1-0.8)^2=0.96$。因此原始 Clone 虽增加了表示自由度，却不保持已有的渲染结果。这就是后面推导新 Clone 公式的原因。
 
@@ -46,7 +50,9 @@ $$C(x)=\sum_i c_i\alpha_i(x)\prod_{j<i}(1-\alpha_j(x)).$$
 
 令 $G$ 表示所有高斯的位置、形状、透明度和颜色等参数，$L(G)$ 是渲染图像与训练图像之间的损失。作者定义
 
-$$P(G)=Z^{-1}\exp[-L(G)].$$
+$$
+P(G)=Z^{-1}\exp[-L(G)].
+$$
 
 它的意思很直接：**这批高斯渲染得越准确，损失越低，整批参数对应的概率就越高。** 因而，寻找最低损失的参数，也就是寻找概率最高的参数。$Z$ 只负责让概率密度的积分等于 1，后面求梯度时不需要计算它。
 
@@ -56,11 +62,15 @@ $$P(G)=Z^{-1}\exp[-L(G)].$$
 
 对上式取对数、求梯度：
 
-$$\nabla_G\log P(G)=-\nabla_G L(G).$$
+$$
+\nabla_G\log P(G)=-\nabla_G L(G).
+$$
 
 因此，普通梯度下降
 
-$$G_{t+1}=G_t-\eta\nabla_G L(G_t)$$
+$$
+G_{t+1}=G_t-\eta\nabla_G L(G_t)
+$$
 
 等价于沿着 $\log P$ 增大的方向移动。**降低损失和提高概率，指向同一个方向。** 这就是优化与采样之间的数学联系，也不要求场景必须由高斯表示。
 
@@ -68,7 +78,9 @@ $$G_{t+1}=G_t-\eta\nabla_G L(G_t)$$
 
 只沿梯度走，通常会停在某个局部最低点。Langevin 方法在梯度更新中加入随机噪声；用随机训练视角估计梯度，就得到 SGLD：
 
-$$\boxed{G_{t+1}=G_t-\eta_t\widehat{\nabla_G L}(G_t)+\sqrt{2\eta_t}\,\xi_t,\qquad\xi_t\sim\mathcal N(0,I).}$$
+$$
+\boxed{G_{t+1}=G_t-\eta_t\widehat{\nabla_G L}(G_t)+\sqrt{2\eta_t}\,\xi_t,\qquad\xi_t\sim\mathcal N(0,I).}
+$$
 
 梯度把高斯拉向重建较好的位置，噪声让它们有机会离开当前区域、尝试其他位置。**在满足相应条件时，两者的平衡使长期采样偏向低损失区域，并对应前面定义的 $P(G)$。** 噪声不能随意添加；随机选训练图像带来的梯度波动，也不自动满足采样要求。
 
@@ -86,7 +98,9 @@ $$\boxed{G_{t+1}=G_t-\eta_t\widehat{\nabla_G L}(G_t)+\sqrt{2\eta_t}\,\xi_t,\qqua
 
 论文式 (8)：
 
-$$\epsilon_\mu=\lambda_{lr}\sigma[-k(t-o)]\Sigma\xi,\qquad \xi\sim\mathcal N(0,I),\ k=100,\ t=0.005.$$
+$$
+\epsilon_\mu=\lambda_{lr}\sigma[-k(t-o)]\Sigma\xi,\qquad \xi\sim\mathcal N(0,I),\ k=100,\ t=0.005.
+$$
 
 - $\Sigma\xi$ 使扰动沿高斯主轴呈各向异性，窄轴较弱、宽轴较强；其噪声协方差为 $\Sigma^2$，不是 $\Sigma$。
 - 透明度权重意在使低 Opacity 高斯更易探索、高 Opacity 高斯更稳定。
@@ -96,7 +110,9 @@ $$\epsilon_\mu=\lambda_{lr}\sigma[-k(t-o)]\Sigma\xi,\qquad \xi\sim\mathcal N(0,I
 
 论文 arXiv HTML v3 的 $\sigma[-k(t-o)]=\sigma[k(o-t)]$ **随 Opacity 增大而增大**，与文字描述相反。官方 `train.py` 使用 `op_sigmoid(1 - opacity)`、中心参数 `0.995`，实际等价于
 
-$$\boxed{w(o)=\sigma[100(0.005-o)]}.$$
+$$
+\boxed{w(o)=\sigma[100(0.005-o)]}.
+$$
 
 **代码权重随 Opacity 增大而减小**，符合设计意图。训练中先执行 Adam step，再生成噪声、乘 `args.noise_lr * xyz_lr`、透明度权重和协方差，最后加到位置。[代码位置](https://github.com/ubc-vision/3dgs-mcmc/blob/main/train.py#L118-L129)。
 
@@ -108,7 +124,9 @@ MCMC 的状态可以是整个集合 $G$。即使高斯数变化，也可把少�
 
 作者希望增密前后
 
-$$P(G^{new})\approx P(G^{old}),$$
+$$
+P(G^{new})\approx P(G^{old}),
+$$
 
 因为 $P\propto e^{-L}$，若渲染结果近似不变，损失及目标密度也通常接近。其动机是让增密成为近似无损的表示重参数化，而不是一次突然改变渲染结果的操作。
 
@@ -130,27 +148,39 @@ $$P(G^{new})\approx P(G^{old}),$$
 
 **第一步：保持中心不透明度相同。**
 
-$$1-(1-o')^N=o\quad\Rightarrow\quad\boxed{o'=1-(1-o)^{1/N}}.$$
+$$
+1-(1-o')^N=o\quad\Rightarrow\quad\boxed{o'=1-(1-o)^{1/N}}.
+$$
 
 但中心一致并不代表外围一致。直接求逐点渲染差的最小二乘解析解困难，作者改为要求**任意经过中心的一维切片积分相等**。
 
 原剖面：
 
-$$A_{old}(x)=o\exp\left(-\frac{x^2}{2s^2}\right).$$
+$$
+A_{old}(x)=o\exp\left(-\frac{x^2}{2s^2}\right).
+$$
 
 新剖面：
 
-$$A_{new}(x)=1-\left(1-o'\exp\left(-\frac{x^2}{2{s'}^2}\right)\right)^N.$$
+$$
+A_{new}(x)=1-\left(1-o'\exp\left(-\frac{x^2}{2{s'}^2}\right)\right)^N.
+$$
 
 令 $\int A_{new}(x)dx=\int A_{old}(x)dx$，用二项式展开和高斯积分，得到
 
-$$B_N(o')=\sum_{k=1}^N(-1)^{k+1}\binom Nk\frac{(o')^k}{\sqrt{k}},$$
+$$
+B_N(o')=\sum_{k=1}^N(-1)^{k+1}\binom Nk\frac{(o')^k}{\sqrt{k}},
+$$
 
-$$\boxed{s'=\gamma s,\quad \gamma=\frac{o}{B_N(o')}}.$$
+$$
+\boxed{s'=\gamma s,\quad \gamma=\frac{o}{B_N(o')}}.
+$$
 
 这与正文式 (9) 的双重求和等价。由于每个主轴尺度统一乘 $\gamma$，
 
-$$\boxed{\Sigma'=\gamma^2\Sigma,\qquad R'=R}.$$
+$$
+\boxed{\Sigma'=\gamma^2\Sigma,\qquad R'=R}.
+$$
 
 因此**论文写协方差矩阵，代码只改 Scale**；Rotation 与 SH 直接继承。SH 不变是因为相同颜色在 Alpha 合成中可作为公共因子提出，而改变颜色无法同时保持后方透射率。
 
@@ -162,7 +192,9 @@ $$\boxed{\Sigma'=\gamma^2\Sigma,\qquad R'=R}.$$
 
 每轮回收先找到 $o\le0.005$ 的 Dead Source，然后从 Live 高斯中按透明度比例**有放回采样** Target：
 
-$$p_i=\frac{o_i}{\sum_{j\in live}o_j}.$$
+$$
+p_i=\frac{o_i}{\sum_{j\in live}o_j}.
+$$
 
 同一个 Target 可能被多个 Source 选中。若被选中 $m$ 次，应一次性按 $N=m+1$ 应用守恒式 Clone 公式，而不能只按单次复制的 $N=2$ 计算。因此先完成全部 Source→Target 映射，再统计重数，最后更新参数。
 
@@ -174,11 +206,15 @@ $$p_i=\frac{o_i}{\sum_{j\in live}o_j}.$$
 
 如果只有 Clone / Relocation，高斯资源未必会主动从无效区域释放。论文因此增加
 
-$$L_{total}=L_{render}+\lambda_o\sum_i|o_i|+\lambda_\Sigma\sum_{i,j}\sqrt{\operatorname{eig}_j(\Sigma_i)}.$$
+$$
+L_{total}=L_{render}+\lambda_o\sum_i|o_i|+\lambda_\Sigma\sum_{i,j}\sqrt{\operatorname{eig}_j(\Sigma_i)}.
+$$
 
 因为 $\Sigma_i=R_i\operatorname{diag}(s_i^2)R_i^T$，所以
 
-$$\sqrt{\operatorname{eig}_j(\Sigma_i)}=s_{ij}.$$
+$$
+\sqrt{\operatorname{eig}_j(\Sigma_i)}=s_{ij}.
+$$
 
 因此第二项本质是对主轴 Scale 做 L1 正则。
 
@@ -194,7 +230,9 @@ $$\sqrt{\operatorname{eig}_j(\Sigma_i)}=s_{ij}.$$
 
 **不是一开始就分配 `cap_max` 个高斯。** 官方 `create_from_pcd()` 根据 SfM 或随机点云数量初始化参数。增密事件中先 `relocate_gs()` 回收死亡高斯，再 `add_new_gs()` 真正追加新高斯：
 
-$$\boxed{N_{next}=\min(N_{max},\lfloor1.05N_{current}\rfloor)}.$$
+$$
+\boxed{N_{next}=\min(N_{max},\lfloor1.05N_{current}\rfloor)}.
+$$
 
 也就是每次增密事件总高斯数最多增长约 5%，直到预算上限。Relocation 不增加参数行数，Add New 才扩展张量和 Adam 状态。论文“dead become alive”说的是有效高斯数量，不是预分配了一个固定容量的死亡高斯池。
 

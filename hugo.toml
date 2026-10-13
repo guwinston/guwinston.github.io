@@ -1,4 +1,4 @@
-baseURL = 'https://guwinston.github.io/wenconggu.github.io/'
+baseURL = 'https://guwinston.github.io/'
 languageCode = 'zh-cn'
 title = '个人手记'
 enableRobotsTXT = true
